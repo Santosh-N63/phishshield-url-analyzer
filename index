@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhishShield Analyzer</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --success: #10b981;
+      --primary: #3b82f6;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0;
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 780px;
+      width: 100%;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    h1 { margin-top: 0; font-size: 1.6rem; }
+    .input-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    input[type="text"] {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid var(--border);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    button {
+      background: var(--primary);
+      border: none;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+    button:hover { opacity: 0.9; }
+    .badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .badge-CRITICAL { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .badge-MEDIUM { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-SAFE { background: rgba(16, 185, 129, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .signals-list { list-style: none; padding-left: 0; margin-top: 8px; }
+    .signals-list li {
+      background: #0f172a;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      border-left: 3px solid var(--danger);
+    }
+    pre {
+      background: #0b1120;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      color: #38bdf8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>PhishShield URL Inspector</h1>
+      <p style="color: var(--subtext); margin: 0;">Enter a destination link to detect malicious patterns and score threats in real time.</p>
+      <div class="input-group">
+        <input type="text" id="urlInput" placeholder="http://secure-login-account-verify.xyz/login" />
+        <button id="scanBtn" onclick="scanUrl()">Scan Link</button>
+      </div>
+    </div>
+
+    <div id="resultCard" class="card" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; font-size: 1.2rem;">Verdict: <span id="verdict"></span></h2>
+        <span id="riskBadge" class="badge"></span>
+      </div>
+      <p>Confidence: <strong id="prob"></strong></p>
+
+      <h4 style="margin-bottom: 4px;">Detected Signals:</h4>
+      <ul id="signals" class="signals-list"></ul>
+
+      <h4 style="margin-bottom: 4px; margin-top: 16px;">Extracted Features:</h4>
+      <pre id="featuresJson"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Automatically routes to port 8000 when opened via Live Server (port 5500)
+    const API_ENDPOINT = (window.location.port === "5500") 
+      ? "http://127.0.0.1:8000/api/scan" 
+      : "/api/scan";
+
+    // Trigger scan on Enter key
+    document.getElementById('urlInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        scanUrl();
+      }
+    });
+
+    async function scanUrl() {
+      const urlInput = document.getElementById('urlInput');
+      const url = urlInput.value.trim();
+      if (!url) return alert("Please enter a URL first.");
+
+      const btn = document.getElementById('scanBtn');
+      btn.innerText = "Scanning...";
+      btn.disabled = true;
+
+      try {
+        const res = await fetch(API_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url, threshold: 0.5 })
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`Server returned HTTP ${res.status}: ${errText || res.statusText}`);
+        }
+
+        const data = await res.json();
+
+        document.getElementById('resultCard').style.display = 'block';
+        document.getElementById('verdict').innerText = data.is_phishing ? '🚨 MALICIOUS / PHISHING' : '✅ BENIGN / SAFE';
+        document.getElementById('prob').innerText = `${(data.phishing_probability * 100).toFixed(1)}%`;
+        
+        const badge = document.getElementById('riskBadge');
+        badge.innerText = data.risk_level;
+        badge.className = `badge badge-${data.risk_level}`;
+
+        const sigUl = document.getElementById('signals');
+        sigUl.innerHTML = data.signals && data.signals.length 
+          ? data.signals.map(s => `<li>⚠️ ${s}</li>`).join('')
+          : '<li style="border-left-color: var(--success)">No obvious red flags detected.</li>';
+
+        document.getElementById('featuresJson').textContent = JSON.stringify(data.features, null, 2);
+      } catch (err) {
+        alert("Scan failed: " + err.message);
+      } finally {
+        btn.innerText = "Scan Link";
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
