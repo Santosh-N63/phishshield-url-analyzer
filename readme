@@ -1,0 +1,25 @@
+# PhishShield Platform — Phishing Detection Engine
+
+PhishShield is an end-to-end URL threat analyzer and machine learning detection platform[cite: 1, 9]. The system extracts structural and lexical patterns, calculates string entropy, runs a Random Forest classifier in memory, and visualizes results via an interactive dashboard.
+
+---
+
+## Complete Project Architecture & Directory Layout
+
+To run the application without path errors, arrange your files in the following exact directory structure:
+
+```text
+phishshield/
+│
+├── .vscode/
+│   ├── launch.json          # VS Code Uvicorn run & debug configuration
+│   └── settings.json        # Python virtual environment configuration
+│
+├── static/
+│   └── index.html           # Dark-mode dashboard frontend UI
+│
+├── .env                     # Server host and port configuration
+├── extractor.py             # Feature engineering & Shannon entropy engine
+├── main.py                  # FastAPI server, ML training, & API endpoints
+├── requirements.txt         # Dependencies list
+└── README.md                # Documentation & lifecycle reference
