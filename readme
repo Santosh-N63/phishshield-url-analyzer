@@ -23,3 +23,21 @@ phishshield/
 ├── main.py                  # FastAPI server, ML training, & API endpoints
 ├── requirements.txt         # Dependencies list
 └── README.md                # Documentation & lifecycle reference
+
+### Installation via Bash (Linux / macOS / Git Bash)
+
+Follow these terminal steps to download, configure, and launch the platform:
+
+#### 1. Clone the Repository
+```bash
+git clone [https://github.com/YOUR_USERNAME/phishshield-detector.git](https://github.com/YOUR_USERNAME/phishshield-detector.git)
+cd phishshield-detector
+
+#### 2.Create and activate a virtual Envirnomnet
+```bash
+python -m venv venv
+source venv/bin/activate
+
+#### 3.install Required Dependencies
+python3 -m pip install --upgrade pip
+pip install -r requirements.txt
